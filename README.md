@@ -1,3 +1,8 @@
+
+Live: https://seeder-147823.appspot.com
+
+=========================
+
 ## Broken Functionality
 
 - Newly created orders don't calculate total until after it's been opened on a device. Total calculation must be done manually. Haven't been implemented yet.
@@ -8,5 +13,5 @@
 
 - Better CSS
 - Create Item Modifiers
-- Create Item Variants 
-- Other API
+- Create Item Variants
+- Other APIs
