@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Seeder</title>
+    <!-- <script type="text/javascript" src="/frontend/bundle.js"></script> -->
+    <style media="screen">
+      body {
+        align-items: center;
+        text-align: center;
+      }
+      .form {
+        padding: 20px;
+      }
+      label {
+        display: block;
+      }
+      input {
+        display: block;
+        text-align: center;
+        margin: 0 auto;
+      }
+      input[type="number"] {
+        font-size: 3em;
+        width: 2em;
+      }
+      label {
+        font-size: 2em;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <form class="form" action="/customer/create" method="post">
+        <label for="customer">Create Customers</label>
+        <input type="number" max="15" value="0" min="0" name="customer" >
+
+        <input type="submit" name="Submit" value="Create Data">
+      </form>
+
+      <form class="form" action="/inventory/create" method="post">
+
+        <label for="inventory">Create Inventories</label>
+        <input type="number" max="15" value="0" min="0" name="inventory" value="">
+
+        <input type="submit" name="Submit" value="Create Data">
+      </form>
+
+      <form class="form" action="/order/create" method="post">
+        <label for="order">Create Orders</label>
+        <input type="number" max="15" value="0" min="0" name="order" value="">
+
+        <input type="submit" name="Submit" value="Create Data">
+      </form>
+
+      <form class="form" action="/payment/create" method="post">
+        <label for="payment">Create Payments</label>
+        <input type="number" max="15" value="0" min="0" name="payment" value="">
+
+        <input type="submit" name="Submit" value="Create Data">
+      </form>
+    </div>
+
+  </body>
+</html>
