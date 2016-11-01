@@ -7,8 +7,8 @@ import urlparse
 import random
 
 # # Webpay
-from Crypto.PublicKey import RSA
-from base64 import b64encode
+# from Crypto.PublicKey import RSA
+# from base64 import b64encode
 
 from google.appengine.api import urlfetch
 from client_secret import *
@@ -222,8 +222,6 @@ class CreatePayment(webapp2.RequestHandler):
             publickey = RSAkey.publickey()
             encrypted = publickey.encrypt(cardNumber, prefix)
             cardEncrypted = b64encode(encrypted[0])
-
-            # YYBQTK5SVXQ2P
 
             url = 'https://apisandbox.dev.clover.com/v3/merchants/{}/orders?filter=state=open'.format( merchant_id )
 
