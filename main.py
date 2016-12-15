@@ -5,21 +5,22 @@ import json
 import pdb
 import urlparse
 import random
-
-# # Webpay
-# from Crypto.PublicKey import RSA
-# from base64 import b64encode
-
-from google.appengine.api import urlfetch
-from client_secret import *
-
-from google.appengine.ext.webapp import template
 from faker import Faker
+
+# Webpay
+from Crypto.PublicKey import RSA
+from base64 import b64encode
+
+# GAE
+from google.appengine.api import urlfetch
+from google.appengine.ext.webapp import template
+
 faker = Faker()
 
 auth_token = None
 merchant_id = None
 client_id = None
+CLIENT_SECRET = "19c36b3e-d632-5a1d-4e23-f5ee3ef5bdb6" # Change to your app
 
 def getAuthToken(self, code):
     global client_id
@@ -51,12 +52,9 @@ class MainPage(webapp2.RequestHandler):
 
         data = {'names': names}
 
-        print data
+        # print data
         path = os.path.join(os.path.dirname(__file__), 'index.html')
         self.response.out.write(template.render(path, data))
-
-        # self.response.headers['Content-Type'] = 'text/html';
-        # self.response.write("<script src='./frontend/bundle.js'></script><div id='root' />");
 
 
 class CreateCustomer(webapp2.RequestHandler):
@@ -107,7 +105,16 @@ class CreateInventory(webapp2.RequestHandler):
             url = 'https://sandbox.dev.clover.com/v3/merchants/{}/items'.format( merchant_id )
             headers = {"Authorization": "Bearer " + auth_token, 'Content-Type': 'application/json'}
 
-            names = ["shirt", "pants", "ball", "dress", "stick"]
+            names = ["shirt", "pants", "ball", "dress", "stick", "rock", "drink", "burger", "fries", "flower", "shoes", "glasses",
+             "spoon","bottle cap","nail clippers","candle","ice cube","slipper","thread","glow stick","needle","stop sign","blouse",
+             "hanger","rubber duck","shovel","bookmark","model car","tampon","rubber band","tire swing","sharpie","picture frame",
+             "photo album","nail filer","tooth paste","bath fizzers","tissue box","deodorant","cookie jar","rusty nail","drill press",
+             "chalk","word search","thermometer","face wash","paint brush","candy wrapper","shoe lace","leg warmers","wireless control",
+             "boom box","quilt","stockings","card","tooth pick","shawl","speakers","key chain","cork","helmet","mouse pad","zipper",
+             "lamp shade","sketch pad","gage","plastic fork","flag","clay pot","check book","CD","#2 pencil","fake flowers","sticky note",
+             "hair tie","credit card","sun glasses","seat belt","buckel","button","canvas","vase","lip gloss","rug","gel","twezzers","toe ring",
+             "scotch tape","bow","white out","grid paper","earser","puddle","cement stone","sponge","lace","outlet","frizz control","sailboat",
+             "screw","sand paper","eye liner","pool stick","pop can","balloon","spring","ipod charger","twister"]
 
             results = []
 
@@ -147,6 +154,7 @@ class CreateOrder(webapp2.RequestHandler):
 
             results = []
 
+            # Create form_data number of orders
             for _ in range(int(form_data['order'][0])):
                 post_data = json.dumps({
                     "state": "open"
@@ -161,20 +169,31 @@ class CreateOrder(webapp2.RequestHandler):
 
                 orderId = json.loads(result.content)['id']
 
+                # Get all items in inventory (limit = 100)
                 items = urlfetch.fetch(
-                    url = 'https://sandbox.dev.clover.com/v3/merchants/{}/items'.format( merchant_id ),
+                    url = 'https://sandbox.dev.clover.com/v3/merchants/{}/items?expand=taxRates'.format( merchant_id ),
                     method = 'GET',
                     headers = headers
                 )
 
-
                 items = json.loads(items.content)['elements']
 
+                #Variable to hold total of all lineitems. Order total needs to be calc manually.
+                ordertotal = 0
 
+                #Seed random number of lineitems
                 for _ in range(int(random.random()*5) + 1):
+                    thisitem = random.choice(items)
+
+                    #If there's tax, add to ordertotal
+                    if thisitem['taxRates']['elements'] != []:
+                        tax = thisitem['price'] * (thisitem['taxRates']['elements'][0]['rate']/10000000.0)
+                    else:
+                        tax = 0
+                    ordertotal += (thisitem['price'] + tax)
                     post_data = json.dumps({
                         "item": {
-                            "id": random.choice(items)['id']
+                            "id": thisitem['id']
                           }
                     })
 
@@ -187,6 +206,17 @@ class CreateOrder(webapp2.RequestHandler):
 
                     results.append(json.loads(result.content))
 
+                post_data = json.dumps({
+                    "total": ordertotal
+                })
+
+                result = urlfetch.fetch(
+                    url = 'https://sandbox.dev.clover.com/v3/merchants/{}/orders/{}'.format( merchant_id, orderId ),
+                    method = 'POST',
+                    headers = headers,
+                    payload = post_data
+                )
+
             path = os.path.join(os.path.dirname(__file__), 'created_orders.html')
             self.response.out.write(template.render(path, {'results': results}))
 
@@ -195,6 +225,7 @@ class CreateOrder(webapp2.RequestHandler):
             self.redirect("https://sandbox.dev.clover.com/oauth/merchants/{}?client_id={}".format(merchant_id, client_id))
 
 
+#Does not work right now because issues with GAE libraries
 class CreatePayment(webapp2.RequestHandler):
     def post(self):
         global auth_token
@@ -219,16 +250,19 @@ class CreatePayment(webapp2.RequestHandler):
 
             RSAkey = RSA.construct((modulus, exponent))
 
+
+
             publickey = RSAkey.publickey()
             encrypted = publickey.encrypt(cardNumber, prefix)
             cardEncrypted = b64encode(encrypted[0])
 
             url = 'https://apisandbox.dev.clover.com/v3/merchants/{}/orders?filter=state=open'.format( merchant_id )
 
-            openOrders = eval(urlfetch.fetch(
+            fetched = urlfetch.fetch(
                 url = url,
                 headers = headers
-            ).content)
+            )
+            openOrders = json.loads(fetched.content)
 
             order = random.choice(openOrders['elements'])
 
@@ -237,6 +271,7 @@ class CreatePayment(webapp2.RequestHandler):
 
             post_data = {
                 "orderId": orderId,
+                "currency": "usd",
                 "amount": orderTotal,
                 "expMonth": expMonth,
                 "cvv": CVV,
@@ -246,12 +281,12 @@ class CreatePayment(webapp2.RequestHandler):
                 "first6": cardNumber[0:6]
             }
 
-            posturl = 'https://apisandbox.dev.clover.com/v2/merchant/EJE2ZH35JJAG2/pay'
+            posturl = 'https://apisandbox.dev.clover.com/v2/merchant/{}/pay'.format(merchant_id)
             postresponse = urlfetch.fetch(
                 url = posturl,
                 headers = headers,
                 method='POST',
-                data = post_data
+                payload = post_data
             )
 
             print postresponse.content
